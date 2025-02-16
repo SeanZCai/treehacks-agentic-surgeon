@@ -2,24 +2,86 @@
 
 import Message from '@/components/Message'
 import TextAnimation from '@/components/TextAnimation'
+import Checklist from '@/components/Checklist'
 import { type Role, useConversation } from '@11labs/react'
 import { useParams } from 'next/navigation'
-import { useCallback, useEffect, useState } from 'react'
-import { GitHub, X } from 'react-feather'
+import { useCallback, useEffect, useState, useRef } from 'react'
+import { X } from 'react-feather'
 import { toast } from 'sonner'
 import { processConversation } from '@/lib/compliance'
 import { supabase } from '@/lib/supabase'
 import { motion } from 'framer-motion'
+import { useTypingEffect } from '@/components/useTypingEffect'
 
 export default function ConversationPage() {
   const { slug } = useParams()
   // State to control landing page display
   const [landingEntered, setLandingEntered] = useState(false)
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   // Pre-existing conversation state
   const [currentText, setCurrentText] = useState('')
   const [messages, setMessages] = useState<any[]>([])
   const [isTranscriptOpen, setIsTranscriptOpen] = useState(false)
   const [complianceInfo, setComplianceInfo] = useState('')
+  const [screenStream, setScreenStream] = useState<MediaStream | null>(null)
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
+  const [recordingUrl, setRecordingUrl] = useState<string | null>(null)
+  const screenshareVideoRef = useRef<HTMLVideoElement>(null)
+  const animatedText = useTypingEffect(currentText || "Listening for audio...", 125)
+
+  // When the screenStream changes, attach it to the video element
+  useEffect(() => {
+    if (screenshareVideoRef.current && screenStream) {
+      screenshareVideoRef.current.srcObject = screenStream
+    }
+  }, [screenStream])
+
+  // Function to start screen recording
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true })
+      setScreenStream(stream)
+      
+      const recorder = new MediaRecorder(stream)
+      const chunks: BlobPart[] = []
+      
+      recorder.ondataavailable = (e) => chunks.push(e.data)
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' })
+        const url = URL.createObjectURL(blob)
+        setRecordingUrl(url)
+      }
+      
+      recorder.start()
+      setMediaRecorder(recorder)
+    } catch (err) {
+      console.error("Error starting screen recording:", err)
+      toast('Failed to start screen recording')
+    }
+  }
+
+  // Function to stop screen recording
+  const stopRecording = () => {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop()
+    }
+    if (screenStream) {
+      screenStream.getTracks().forEach(track => track.stop())
+      setScreenStream(null)
+    }
+  }
+
+  // Cleanup function
+  useEffect(() => {
+    return () => {
+      if (recordingUrl) {
+        URL.revokeObjectURL(recordingUrl)
+      }
+      if (screenStream) {
+        screenStream.getTracks().forEach(track => track.stop())
+      }
+    }
+  }, [recordingUrl, screenStream])
 
   const loadConversation = () => {
     fetch(`/api/c?id=${slug}`)
@@ -81,25 +143,36 @@ export default function ConversationPage() {
       }
 
       if (source === 'ai') {
-        setCurrentText(message)
+        // Only update text if it's different to prevent duplicates
+        if (currentText !== message) {
+          setCurrentText(message)
+        }
       }
 
-      // Log the message to the backend (keeps transcript history)
-      fetch('/api/c', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: slug,
-          item: {
-            type: 'message',
-            status: 'completed',
-            object: 'realtime.item',
-            id: 'item_' + Math.random(),
-            role: source === 'ai' ? 'assistant' : 'user',
-            content: [{ type: 'text', transcript: message }],
-          },
-        }),
-      }).then(loadConversation)
+      // Only log the message if it's not a duplicate
+      const isDuplicate = messages.some(m => 
+        m.role === (source === 'ai' ? 'assistant' : 'user') && 
+        m.formatted.transcript === message
+      );
+
+      if (!isDuplicate) {
+        // Log the message to the backend (keeps transcript history)
+        fetch('/api/c', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: slug,
+            item: {
+              type: 'message',
+              status: 'completed',
+              object: 'realtime.item',
+              id: 'item_' + Math.random(),
+              role: source === 'ai' ? 'assistant' : 'user',
+              content: [{ type: 'text', transcript: message }],
+            },
+          }),
+        }).then(loadConversation)
+      }
     },
   })
 
@@ -163,10 +236,21 @@ export default function ConversationPage() {
   // Landing page "Enter" button handler
   const handleEnter = () => setLandingEntered(true)
 
+  const handleBackClick = () => {
+    setShowConfirmDialog(true)
+  }
+
+  const handleConfirmBack = (confirmed: boolean) => {
+    setShowConfirmDialog(false)
+    if (confirmed) {
+      window.location.href = '/'
+    }
+  }
+
   // Render landing view if user hasn't clicked "Enter"
   if (!landingEntered) {
     return (
-      <div className="relative w-screen h-screen flex justify-center items-center overflow-hidden">
+      <div className="relative w-screen h-screen flex justify-center items-center overflow-hidden" style={{ background: 'var(--bg-color)' }}>
         {/* Video Background */}
         <div className="absolute inset-0 z-0">
           <video autoPlay muted loop className="w-full h-full object-cover">
@@ -177,56 +261,102 @@ export default function ConversationPage() {
         {/* Gradient Overlays */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,var(--primary-glow)_0%,transparent_30%),radial-gradient(circle_at_bottom_left,var(--secondary-glow)_0%,transparent_30%)]" />
         {/* Landing Content */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease: 'easeOut' }}
-          className="relative z-10 text-center p-8 bg-[rgba(20,20,32,0.5)] rounded-2xl border border-[rgba(34,195,217,0.1)] backdrop-blur-xl"
-        >
-          <h1 className="text-5xl mb-4 text-white text-shadow-glow">Surgentic</h1>
-          <p className="text-xl mb-8 text-white opacity-90">
+        <div className="landing-content">
+          <h1 className="landing-title">Surgentic</h1>
+          <p className="landing-subtitle">
             Confidence. Safety. Every surgery, every time.
           </p>
           <button
             onClick={handleEnter}
-            className="text-xl px-8 py-4 bg-gradient-to-r from-primary to-secondary rounded-lg text-white cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-glow active:translate-y-0.5"
+            className="enter-button"
           >
             Enter
           </button>
-        </motion.div>
+        </div>
       </div>
     )
   }
 
   // Render the conversation interface after landing page is dismissed
   return (
-    <>
-      <a
-        target="_blank"
-        href="https://github.com/neondatabase-labs/voice-thingy-with-elevenlabs-neon/"
-        className="fixed bottom-2 right-2"
-      >
-        <GitHub />
-      </a>
-      <div className="fixed top-2 left-2">
-        <a href="/">
-          <span>Voice Assistant</span>
-        </a>
-      </div>
-      <TextAnimation
-        currentText={currentText}
-        isAudioPlaying={conversation.isSpeaking}
-        onStopListening={handleStopListening}
-        onStartListening={handleStartListening}
-      />
-      {messages.length > 0 && (
-        <button
-          className="text-sm fixed top-2 right-4 underline"
-          onClick={() => setIsTranscriptOpen(!isTranscriptOpen)}
-        >
-          Show Transcript
-        </button>
+    <div className="container">
+      {showConfirmDialog && (
+        <div className="confirm-dialog-overlay">
+          <div className="confirm-dialog">
+            <h2><strong>Are you sure?</strong></h2>
+            <p>Do you want to return to the home page?</p>
+            <div className="confirm-buttons">
+              <button onClick={() => handleConfirmBack(true)}>Yes</button>
+              <button onClick={() => handleConfirmBack(false)}>No</button>
+            </div>
+          </div>
+        </div>
       )}
+
+      <div className="left-column">
+        <header className="app-header">
+          <button className="back-button" onClick={handleBackClick}>
+            ← Back
+          </button>
+          <button
+            className="start-button ml-4 bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)]"
+            onClick={conversation.status !== 'connected' ? handleStartListening : handleStopListening}
+          >
+            {conversation.status !== 'connected' ? 'Start Surgentic' : 'Stop Surgentic'}
+          </button>
+          <button
+            className="start-button ml-4 bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)]"
+            onClick={screenStream ? stopRecording : startRecording}
+          >
+            {screenStream ? 'Stop Screen Recording' : recordingUrl ? 'Record Screen Again' : 'Record Screen'}
+          </button>
+        </header>
+
+        <div className="main-content" style={{ marginRight: "20px" }}>
+          <div className="transcription-section">
+            <div className="transcription-header">
+              <h2>Live Transcription</h2>
+              <TextAnimation
+                isAudioPlaying={conversation.isSpeaking}
+                onStopListening={handleStopListening}
+                onStartListening={handleStartListening}
+              />
+            </div>
+            <div className="transcription-content">
+              <p>
+                {animatedText}
+                <span className="blinking-cursor" />
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="right-column">
+        <h2 className="checklist-title">Surgical Safety Checklist</h2>
+        <div className="checklist">
+          <Checklist />
+        </div>
+        <div className="mt-auto pt-4 flex flex-col items-center w-full gap-2">
+          {messages.length > 0 && (
+            <button
+              className="text-sm underline mb-2 w-3/4 py-2 px-4 bg-[var(--surface-color)] border border-[var(--primary-color)] rounded-md hover:bg-[rgba(34,195,217,0.1)]"
+              onClick={() => setIsTranscriptOpen(!isTranscriptOpen)}
+            >
+              Show Transcript
+            </button>
+          )}
+          {recordingUrl && (
+            <button
+              className="text-sm underline mb-2 w-3/4 py-2 px-4 bg-[var(--surface-color)] border border-[var(--primary-color)] rounded-md hover:bg-[rgba(34,195,217,0.1)]"
+              onClick={() => window.open(`/recording?url=${encodeURIComponent(recordingUrl)}`, '_blank')}
+            >
+              Show Recording
+            </button>
+          )}
+        </div>
+      </div>
+
       {isTranscriptOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-white text-black p-4 rounded shadow-lg max-w-[90%] max-h-[90%] overflow-y-scroll">
@@ -244,6 +374,6 @@ export default function ConversationPage() {
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }

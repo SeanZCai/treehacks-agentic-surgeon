@@ -9,9 +9,9 @@ const interFont = Inter({
 })
 
 const config = {
-  url: 'https://ai-pulse.vercel.app',
-  title: 'Voice led interactions with AI (powered by ElevenLabs)',
-  description: 'Voice led interactions with AI using Neon as the serverless database, and ElevenLabs as the Realtime conversation AI.',
+  url: '',
+  title: 'Surgentic',
+  description: 'Medical AI Assistant',
 }
 
 const btoa = (str: string) => Buffer.from(str).toString('base64')
