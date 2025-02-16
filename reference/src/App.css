@@ -1,0 +1,444 @@
+.logo.vite:hover {
+  filter: drop-shadow(0 0 2em #747bff);
+}
+
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafb);
+}
+:root {
+  --primary-color: #22c3d9;
+  --primary-glow: rgba(34, 195, 217, 0.3);
+  --secondary-color: #7a8c99;
+  --secondary-glow: rgba(122, 140, 153, 0.3);
+  --bg-color: #0a0f14;
+  --surface-color: #141820;
+  --text-color: #ffffff;
+  --sidebar-bg: rgba(20, 24, 32, 0.7);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  color: var(--text-color);
+  background-color: var(--bg-color);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-color);
+  color: var(--text-color);
+}
+
+.container {
+  display: flex;
+  height: 100vh;
+  box-sizing: border-box;
+  background: radial-gradient(circle at top right, var(--primary-glow) 0%, transparent 30%),
+              radial-gradient(circle at bottom left, var(--secondary-glow) 0%, transparent 30%);
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.left-column {
+  flex: 3;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem;
+  background: transparent;
+  position: relative;
+  justify-content: space-between;
+}
+
+.right-column {
+  flex: 1;
+  background: var(--sidebar-bg);
+  padding: 1.5rem;
+  backdrop-filter: blur(10px);
+  border-left: 1px solid rgba(34, 195, 217, 0.1);
+  min-width: 300px;
+  box-shadow: -4px 0 20px rgba(34, 195, 217, 0.1);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  background: transparent;
+  border: none;
+  backdrop-filter: none;
+}
+
+.back-button {
+  padding: 0.5em 1em;
+  font-size: 1rem;
+  background: rgba(20, 24, 32, 0.5);
+  border: 1px solid var(--primary-color);
+  color: var(--text-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(5px);
+}
+
+.back-button:hover {
+  background: rgba(34, 195, 217, 0.1);
+  box-shadow: 0 0 15px var(--primary-glow);
+}
+
+.confirm-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(10, 10, 15, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.confirm-dialog {
+  background: var(--surface-color);
+  padding: 2rem;
+  border-radius: 12px;
+  border: 1px solid rgba(34, 195, 217, 0.2);
+  text-align: center;
+  animation: fadeIn 0.3s ease-out;
+  box-shadow: 0 0 30px var(--primary-glow);
+}
+
+.confirm-dialog h2 {
+  color: var(--text-color);
+  margin-bottom: 1rem;
+  text-shadow: 0 0 10px var(--primary-glow);
+}
+
+.confirm-dialog p {
+  color: var(--text-color);
+  margin-bottom: 2rem;
+  opacity: 0.9;
+}
+
+.confirm-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.confirm-buttons button {
+  min-width: 100px;
+}
+
+.app-title {
+  color: var(--text-color);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+  text-shadow: 0 0 10px var(--primary-glow);
+}
+
+.checklist-title {
+  color: var(--text-color);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--primary-color);
+  text-shadow: 0 0 10px var(--primary-glow);
+  flex-shrink: 0;
+}
+
+.checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  margin-right: -0.5rem;
+  padding-left: 2px;
+  margin-left: -2px;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  background: rgba(20, 20, 32, 0.5);
+  border-radius: 8px;
+  border: 1px solid rgba(34, 195, 217, 0.1);
+  transition: all 0.2s ease;
+  backdrop-filter: blur(5px);
+  margin: 0 2px;
+}
+
+.checklist-item:hover {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 15px var(--primary-glow);
+  transform: translateX(-2px);
+}
+
+.checklist-item input[type="checkbox"] {
+  margin-right: 12px;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--primary-color);
+  border-radius: 4px;
+  cursor: pointer;
+  accent-color: var(--primary-color);
+  position: relative;
+}
+
+.checklist-item input[type="checkbox"]:checked {
+  background-color: var(--primary-color);
+  box-shadow: 0 0 10px var(--primary-glow);
+}
+
+.checklist-item label {
+  flex: 1;
+  font-size: 0.9rem;
+  color: var(--text-color);
+  cursor: pointer;
+}
+
+button {
+  background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  border: none;
+  padding: 0.6em 1.2em;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+button:hover {
+  box-shadow: 0 0 15px var(--primary-glow);
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+input {
+  background: rgba(20, 20, 32, 0.5);
+  border: 1px solid rgba(34, 195, 217, 0.3);
+  border-radius: 6px;
+  padding: 0.6em 1.2em;
+  font-size: 0.9rem;
+  color: var(--text-color);
+  transition: all 0.2s ease;
+}
+
+input:focus {
+  border-color: var(--primary-color);
+  outline: none;
+  box-shadow: 0 0 10px var(--primary-glow);
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: all 0.75s ease;
+  filter: drop-shadow(0 0 5px var(--primary-glow));
+}
+
+.logo:hover {
+  filter: drop-shadow(0 0 15px var(--primary-glow));
+}
+
+.row {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+a:hover {
+  color: var(--secondary-color);
+  text-shadow: 0 0 10px var(--secondary-glow);
+}
+
+h1 {
+  text-align: center;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-color: #1a1a1a;
+    --text-color: #ffffff;
+    --sidebar-bg: #242424;
+  }
+
+  .checklist-item {
+    background: #2a2a2a;
+    border-color: rgba(34, 195, 217, 0.2);
+  }
+
+  input {
+    background-color: #2a2a2a;
+    color: white;
+  }
+
+  .checklist-item:hover {
+    background: #303030;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-bottom: 0;
+}
+
+.transcription-section {
+  flex: 0 0 auto;
+  min-height: 180px;
+  max-height: 250px;
+  background: rgba(20, 24, 32, 0.5);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid rgba(34, 195, 217, 0.1);
+  padding: 1rem 1.5rem;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.transcription-section::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+}
+
+.transcription-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  padding: 0 0.5rem;
+}
+
+.transcription-header h2 {
+  color: var(--text-color);
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  box-shadow: 0 0 10px var(--primary-glow);
+  animation: pulse 2s infinite;
+}
+
+.transcription-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  background: rgba(10, 15, 20, 0.3);
+  border-radius: 8px;
+  border: 1px solid rgba(34, 195, 217, 0.05);
+  margin: 0 0.5rem;
+  height: 140px;
+}
+
+.transcription-content p {
+  color: var(--text-color);
+  margin: 0;
+  line-height: 1.6;
+  opacity: 0.9;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Style the scrollbar */
+.checklist::-webkit-scrollbar {
+  width: 8px;
+}
+
+.checklist::-webkit-scrollbar-track {
+  background: rgba(20, 24, 32, 0.3);
+  border-radius: 4px;
+}
+
+.checklist::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 4px;
+  opacity: 0.7;
+}
+
+.checklist::-webkit-scrollbar-thumb:hover {
+  background: var(--secondary-color);
+}
+
+/* NEW: Styles for the screenshare section */
+.screenshare-section {
+  padding: 1rem;
+  text-align: center;
+}
+
+.screenshare-button {
+  background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  border: none;
+  padding: 0.6em 1.2em;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  margin: 0.5rem auto;
+}

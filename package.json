@@ -10,7 +10,9 @@
   "dependencies": {
     "@11labs/react": "^0.0.4",
     "@neondatabase/serverless": "^0.10.4",
-    "framer-motion": "^11.13.5",
+    "@supabase/supabase-js": "^2.48.1",
+    "dotenv": "^16.4.7",
+    "framer-motion": "^11.18.2",
     "motion": "^11.11.17",
     "next": "^15.1.0",
     "react": "^19.0.0",
