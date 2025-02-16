@@ -7,12 +7,13 @@ import { useParams } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import { GitHub, X } from 'react-feather'
 import { toast } from 'sonner'
-
+import { processConversation } from '@/lib/compliance'
 export default function () {
   const { slug } = useParams()
   const [currentText, setCurrentText] = useState('')
   const [messages, setMessages] = useState<any[]>([])
   const [isTranscriptOpen, setIsTranscriptOpen] = useState(false)
+  const [complianceInfo, setComplianceInfo] = useState('')
   const loadConversation = () => {
     fetch(`/api/c?id=${slug}`)
       .then((res) => res.json())
@@ -33,9 +34,36 @@ export default function () {
   const conversation = useConversation({
     onError: (error: string) => { toast(error) },
     onConnect: () => { toast('Connected to ElevenLabs.') },
-    onMessage: (props: { message: string; source: Role }) => {
+    onMessage: async (props: { message: string; source: Role }) => {
       const { message, source } = props
-      if (source === 'ai') setCurrentText(message)
+      
+      if (source === 'user') {
+        console.log("Initiating compliance processing for user input.")
+
+        // Combine previous messages and the new message into a conversation string.
+        const conversationText = [
+          ...messages.map((m) => `${m.role}: ${m.formatted.transcript}`),
+          `user: ${message}`,
+        ].join(' | ')
+
+        try {
+          // Call the external compliance endpoint.
+          const complianceInfo = await processConversation(conversationText)
+          console.log("Received compliance info:", complianceInfo)
+
+          // Update the conversation context so your agent can use this info in its next response.
+          // (Ensure your ElevenLabs agent is set to reference the compliance context.)
+          setComplianceInfo(complianceInfo)
+        } catch (err) {
+          console.error("Compliance processing failed:", err)
+        }
+      }
+
+      if (source === 'ai') {
+        setCurrentText(message)
+      }
+
+      // Log the message to your backend (keeps transcript history, etc.)
       fetch('/api/c', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -63,11 +91,20 @@ export default function () {
       })
       const data = await response.json()
       if (data.error) return toast(data.error)
-      await conversation.startSession({ signedUrl: data.apiKey })
+      await conversation.startSession({ 
+        signedUrl: data.apiKey,
+        overrides: {
+          agent: {
+            prompt: {
+              prompt: `You are an AI assistant. When responding, use the compliance information provided in the context: ${complianceInfo}`
+            }
+          }
+        }
+      })
     } catch (error) {
       toast('Failed to set up ElevenLabs client :/')
     }
-  }, [conversation])
+  }, [conversation, complianceInfo])
   const disconnectConversation = useCallback(async () => {
     await conversation.endSession()
   }, [conversation])
