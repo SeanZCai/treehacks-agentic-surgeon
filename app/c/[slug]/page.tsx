@@ -30,6 +30,14 @@ export default function ConversationPage() {
   const screenshareVideoRef = useRef<HTMLVideoElement>(null)
   const animatedText = useTypingEffect(currentText || "Listening for audio...", 125)
   const [isRecordingsOpen, setIsRecordingsOpen] = useState(false)
+  const [actionsCompleted, setActionsCompleted] = useState({
+    surgenticStarted: false,
+    surgenticStopped: false,
+    recordingStarted: false,
+    recordingStopped: false,
+  })
+
+  const allActionsCompleted = Object.values(actionsCompleted).every(Boolean)
 
   // When the screenStream changes, attach it to the video element
   useEffect(() => {
@@ -68,7 +76,7 @@ export default function ConversationPage() {
           const data = await response.json()
           setRecordingUrl(data.url)
           toast('Recording saved successfully', {
-            duration: 1500 // 1.5 seconds instead of default 3 seconds
+            duration: 1500
           })
         } catch (error) {
           console.error('Error saving recording:', error)
@@ -78,6 +86,7 @@ export default function ConversationPage() {
       
       recorder.start()
       setMediaRecorder(recorder)
+      setActionsCompleted(prev => ({ ...prev, recordingStarted: true }))
     } catch (err) {
       console.error("Error starting screen recording:", err)
       toast('Failed to start screen recording')
@@ -93,6 +102,7 @@ export default function ConversationPage() {
       screenStream.getTracks().forEach(track => track.stop())
       setScreenStream(null)
     }
+    setActionsCompleted(prev => ({ ...prev, recordingStopped: true }))
   }
 
   // Cleanup function
@@ -243,11 +253,17 @@ export default function ConversationPage() {
   }, [conversation])
 
   const handleStartListening = () => {
-    if (conversation.status !== 'connected') connectConversation()
+    if (conversation.status !== 'connected') {
+      connectConversation()
+      setActionsCompleted(prev => ({ ...prev, surgenticStarted: true }))
+    }
   }
 
   const handleStopListening = () => {
-    if (conversation.status === 'connected') disconnectConversation()
+    if (conversation.status === 'connected') {
+      disconnectConversation()
+      setActionsCompleted(prev => ({ ...prev, surgenticStopped: true }))
+    }
   }
 
   // Ensure conversation is torn down properly
@@ -269,6 +285,11 @@ export default function ConversationPage() {
     if (confirmed) {
       window.location.href = '/'
     }
+  }
+
+  const handleGenerateReport = () => {
+    // TODO: Implement report generation
+    toast('Generating report...')
   }
 
   // Render landing view if user hasn't clicked "Enter"
@@ -334,6 +355,14 @@ export default function ConversationPage() {
           >
             {screenStream ? 'Stop Screen Recording' : recordingUrl ? 'Record Screen Again' : 'Record Screen'}
           </button>
+          {allActionsCompleted && (
+            <button
+              className="start-button ml-4 bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)]"
+              onClick={handleGenerateReport}
+            >
+              Generate Report
+            </button>
+          )}
         </header>
 
         {screenStream && (
