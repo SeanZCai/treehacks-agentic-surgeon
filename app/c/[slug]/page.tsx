@@ -67,7 +67,9 @@ export default function ConversationPage() {
           
           const data = await response.json()
           setRecordingUrl(data.url)
-          toast('Recording saved successfully')
+          toast('Recording saved successfully', {
+            duration: 1500 // 1.5 seconds instead of default 3 seconds
+          })
         } catch (error) {
           console.error('Error saving recording:', error)
           toast('Failed to save recording')
