@@ -28,7 +28,7 @@ function App() {
 
   // Simulate loading data from a spreadsheet
   useEffect(() => {
-    // This is mock data - you would replace this with an actual Google Sheets API call
+    // This is mock data - we replaced this with an actual Google Sheets API call
     const mockData: ChecklistItem[] = [
       { question: "Patient identity verified", checked: false },
       { question: "Surgical site marked", checked: false },

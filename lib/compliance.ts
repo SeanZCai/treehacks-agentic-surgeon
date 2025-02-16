@@ -13,7 +13,7 @@ export async function processConversation(conversation: string): Promise<string>
     }
     const data = await response.json()
     if (data.error) {
-      throw new Error(data.error)
+      console.log(data.error)
     }
     console.log("Compliance API response:", data)
     return data.response

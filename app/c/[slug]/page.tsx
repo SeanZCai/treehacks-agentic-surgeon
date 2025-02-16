@@ -27,6 +27,9 @@ export default function ConversationPage() {
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null)
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
   const [recordingUrl, setRecordingUrl] = useState<string | null>(null)
+  const [preprocessingComplete, setPreprocessingComplete] = useState(false)
+  const [isPreprocessing, setIsPreprocessing] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const screenshareVideoRef = useRef<HTMLVideoElement>(null)
   const animatedText = useTypingEffect(currentText || "Listening for audio...", 125)
   const [isRecordingsOpen, setIsRecordingsOpen] = useState(false)
@@ -36,6 +39,7 @@ export default function ConversationPage() {
     recordingStarted: false,
     recordingStopped: false,
   })
+  const [isLoading, setIsLoading] = useState(false)
 
   const allActionsCompleted = Object.values(actionsCompleted).every(Boolean)
 
@@ -225,7 +229,7 @@ export default function ConversationPage() {
         overrides: {
           agent: {
             prompt: {
-              prompt: `Main requirement: DO NOT TALK UNLESS EXPLICITLY ADDRESSED. Stay silent and observe audio, do NOT respond. 
+              prompt: `Main requirement: DO NOT TALK UNLESS EXPLICITLY ADDRESSED. Stay silent and observe audio, do NOT respond.  DO NOT say eleven labs.
 
               You are a medical procedure supervisor responsible for monitoring and ensuring proper checklist completion during medical procedures. Your role is to:
 
@@ -287,10 +291,46 @@ export default function ConversationPage() {
     }
   }
 
-  const handleGenerateReport = () => {
-    // TODO: Implement report generation
+  const handleGenerateReport = async () => {
     toast('Generating report...')
-  }
+    setIsLoading(true);
+    try {
+      // Open a new window immediately to avoid popup blockers
+      const newWindow = window.open('about:blank', '_blank');
+      
+      const response = await fetch('http://localhost:5001/generate-report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        newWindow?.close();
+        throw new Error(errorData.error || 'Failed to generate report');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      // Navigate the new window to the PDF URL
+      if (newWindow) {
+        newWindow.location.href = url;
+      }
+
+      // Clean up the blob URL after a delay to ensure it loads
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+      }, 1000);
+
+    } catch (error) {
+      console.error('Error generating report:', error);
+      // You might want to show an error toast here
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Render landing view if user hasn't clicked "Enter"
   if (!landingEntered) {
@@ -343,6 +383,7 @@ export default function ConversationPage() {
           <button className="back-button" onClick={handleBackClick}>
             ← Back
           </button>
+          
           <button
             className="start-button ml-4 bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)]"
             onClick={conversation.status !== 'connected' ? handleStartListening : handleStopListening}

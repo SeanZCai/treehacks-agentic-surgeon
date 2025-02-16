@@ -38,9 +38,9 @@ export default function Checklist() {
     fetchRequirements();
   }, []);
 
-  // Refresh every 10 seconds
+  // Refresh every 4 seconds
   useEffect(() => {
-    const interval = setInterval(fetchRequirements, 10000);
+    const interval = setInterval(fetchRequirements, 4000);
     return () => clearInterval(interval);
   }, []);
 
