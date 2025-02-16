@@ -201,7 +201,7 @@ body {
 .app-header {
   display: flex;
   align-items: center;
-  padding: 1rem;
+  padding: 0rem;
   background: transparent;
   border: none;
   backdrop-filter: none;

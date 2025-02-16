@@ -312,6 +312,19 @@ export default function ConversationPage() {
           </button>
         </header>
 
+        {screenStream && (
+          <div className="mt-4">
+            <video
+              ref={screenshareVideoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full rounded-lg border border-[var(--primary-color)] bg-[var(--surface-color)]"
+              style={{ maxHeight: "390px" }}
+            />
+          </div>
+        )}
+
         <div className="main-content" style={{ marginRight: "20px" }}>
           <div className="transcription-section">
             <div className="transcription-header">
