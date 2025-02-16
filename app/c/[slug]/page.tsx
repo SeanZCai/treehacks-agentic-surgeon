@@ -12,6 +12,7 @@ import { processConversation } from '@/lib/compliance'
 import { supabase } from '@/lib/supabase'
 import { motion } from 'framer-motion'
 import { useTypingEffect } from '@/components/useTypingEffect'
+import RecordingsGallery from '@/components/RecordingsGallery'
 
 export default function ConversationPage() {
   const { slug } = useParams()
@@ -28,6 +29,7 @@ export default function ConversationPage() {
   const [recordingUrl, setRecordingUrl] = useState<string | null>(null)
   const screenshareVideoRef = useRef<HTMLVideoElement>(null)
   const animatedText = useTypingEffect(currentText || "Listening for audio...", 125)
+  const [isRecordingsOpen, setIsRecordingsOpen] = useState(false)
 
   // When the screenStream changes, attach it to the video element
   useEffect(() => {
@@ -46,10 +48,30 @@ export default function ConversationPage() {
       const chunks: BlobPart[] = []
       
       recorder.ondataavailable = (e) => chunks.push(e.data)
-      recorder.onstop = () => {
+      recorder.onstop = async () => {
         const blob = new Blob(chunks, { type: 'video/webm' })
-        const url = URL.createObjectURL(blob)
-        setRecordingUrl(url)
+        
+        // Create FormData and append the recording
+        const formData = new FormData()
+        formData.append('recording', blob, 'recording.webm')
+        
+        try {
+          const response = await fetch('/api/recordings', {
+            method: 'POST',
+            body: formData
+          })
+          
+          if (!response.ok) {
+            throw new Error('Failed to save recording')
+          }
+          
+          const data = await response.json()
+          setRecordingUrl(data.url)
+          toast('Recording saved successfully')
+        } catch (error) {
+          console.error('Error saving recording:', error)
+          toast('Failed to save recording')
+        }
       }
       
       recorder.start()
@@ -359,14 +381,12 @@ export default function ConversationPage() {
               Show Transcript
             </button>
           )}
-          {recordingUrl && (
-            <button
-              className="text-sm underline mb-2 w-3/4 py-2 px-4 bg-[var(--surface-color)] border border-[var(--primary-color)] rounded-md hover:bg-[rgba(34,195,217,0.1)]"
-              onClick={() => window.open(`/recording?url=${encodeURIComponent(recordingUrl)}`, '_blank')}
-            >
-              Show Recording
-            </button>
-          )}
+          <button
+            className="text-sm underline mb-2 w-3/4 py-2 px-4 bg-[var(--surface-color)] border border-[var(--primary-color)] rounded-md hover:bg-[rgba(34,195,217,0.1)]"
+            onClick={() => setIsRecordingsOpen(true)}
+          >
+            View Recordings
+          </button>
         </div>
       </div>
 
@@ -386,6 +406,10 @@ export default function ConversationPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {isRecordingsOpen && (
+        <RecordingsGallery onClose={() => setIsRecordingsOpen(false)} />
       )}
     </div>
   )
